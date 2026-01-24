@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris Clone 2026</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="sidebar">
+            <h1>TETRIS</h1>
+            <div class="score-panel">
+                <div class="stat">
+                    <span class="label">Score</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Level</span>
+                    <span id="level">1</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Lines</span>
+                    <span id="lines">0</span>
+                </div>
+            </div>
+            <div class="next-piece">
+                <span class="label">Next</span>
+                <canvas id="next-canvas" width="100" height="100"></canvas>
+            </div>
+            <div class="controls">
+                <p><kbd>&larr;</kbd> <kbd>&rarr;</kbd> Move</p>
+                <p><kbd>&uarr;</kbd> Rotate</p>
+                <p><kbd>&darr;</kbd> Soft Drop</p>
+                <p><kbd>Space</kbd> Hard Drop</p>
+                <p><kbd>P</kbd> Pause</p>
+            </div>
+        </div>
+        <div class="game-board">
+            <canvas id="game-canvas" width="300" height="600"></canvas>
+            <div id="game-over" class="overlay hidden">
+                <h2>Game Over</h2>
+                <p>Final Score: <span id="final-score">0</span></p>
+                <button id="restart-btn">Play Again</button>
+            </div>
+            <div id="pause-screen" class="overlay hidden">
+                <h2>Paused</h2>
+                <p>Press P to resume</p>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
