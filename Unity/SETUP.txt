@@ -1,0 +1,187 @@
+================================================================================
+                    MYER - Unity Setup Guide
+          Military-Themed Tetris (40 columns, 8 pieces including Cross)
+================================================================================
+
+STEP 1: CREATE UNITY PROJECT
+--------------------------------------------------------------------------------
+1. Open Unity Hub
+2. Click "New Project"
+3. Select "2D (Built-In Render Pipeline)" template
+4. Name it "Myer" and choose location
+5. Click "Create Project"
+
+STEP 2: IMPORT SCRIPTS
+--------------------------------------------------------------------------------
+1. In Unity, navigate to Assets folder
+2. Create folder: Assets/Scripts
+3. Copy these files into Assets/Scripts:
+   - GameBoard.cs
+   - GameManager.cs
+   - Tetromino.cs
+   - GhostPiece.cs
+
+STEP 3: CREATE BLOCK SPRITE
+--------------------------------------------------------------------------------
+1. Right-click in Assets > Create > Sprites > Square
+2. Name it "Block"
+3. Or import your own 32x32 pixel block sprite
+
+STEP 4: CREATE BLOCK PREFAB
+--------------------------------------------------------------------------------
+1. In Hierarchy, right-click > Create Empty, name it "Block"
+2. Add Component > Sprite Renderer
+3. Assign the Square sprite
+4. Set Transform Scale to (0.9, 0.9, 1) for small gap between blocks
+5. Drag from Hierarchy to Assets/Prefabs folder to create prefab
+6. Delete from Hierarchy
+
+STEP 5: CREATE TETROMINO PREFABS
+--------------------------------------------------------------------------------
+For each piece, create an empty parent with child blocks:
+
+I-PIECE (Army Green):
+  Parent: Empty GameObject named "Tetromino_I"
+  - Add Tetromino.cs script
+  - Set RotationPoint to (1.5, 0.5, 0)
+  Child Blocks at positions: (0,1), (1,1), (2,1), (3,1)
+
+J-PIECE (Dark Brown):
+  Parent: "Tetromino_J"
+  - Set RotationPoint to (1, 0.5, 0)
+  Blocks: (0,1), (0,0), (1,0), (2,0)
+
+L-PIECE (Tan/Khaki):
+  Parent: "Tetromino_L"
+  - Set RotationPoint to (1, 0.5, 0)
+  Blocks: (2,1), (0,0), (1,0), (2,0)
+
+O-PIECE (Olive Drab):
+  Parent: "Tetromino_O"
+  - Set RotationPoint to (0.5, 0.5, 0)
+  Blocks: (0,0), (1,0), (0,1), (1,1)
+
+S-PIECE (Dark Olive):
+  Parent: "Tetromino_S"
+  - Set RotationPoint to (1, 0.5, 0)
+  Blocks: (1,1), (2,1), (0,0), (1,0)
+
+T-PIECE (Forest Green):
+  Parent: "Tetromino_T"
+  - Set RotationPoint to (1, 0.5, 0)
+  Blocks: (1,1), (0,0), (1,0), (2,0)
+
+Z-PIECE (Coyote Brown):
+  Parent: "Tetromino_Z"
+  - Set RotationPoint to (1, 0.5, 0)
+  Blocks: (0,1), (1,1), (1,0), (2,0)
+
+X-PIECE / CROSS (Saddle Brown) - UNIQUE PIECE:
+  Parent: "Tetromino_X"
+  - Set RotationPoint to (1, 1, 0)
+  Blocks: (1,0), (0,1), (1,1), (2,1), (1,2)  <- 5 blocks!
+
+Save each as prefab in Assets/Prefabs folder.
+
+STEP 6: SCENE SETUP
+--------------------------------------------------------------------------------
+1. Camera Settings:
+   - Position: (20, 10, -10)
+   - Projection: Orthographic
+   - Size: 12
+   - Background Color: #1a1f14 (dark military green)
+
+2. Create GameObjects:
+   a) Empty "GameManager"
+      - Add GameManager.cs script
+      - Assign all 8 tetromino prefabs to Tetrominoes array
+
+   b) Empty "GameBoard"
+      - Add GameBoard.cs script
+
+   c) Empty "SpawnPoint"
+      - Position: (20, 20, 0)  <- center-top of 40-column board
+      - Assign to GameManager's SpawnPoint field
+
+   d) Empty "NextPiecePreview"
+      - Position: (-3, 15, 0)  <- left side for UI
+      - Assign to GameManager's NextPiecePreviewPoint
+
+STEP 7: CREATE UI
+--------------------------------------------------------------------------------
+1. Right-click Hierarchy > UI > Canvas
+2. Set Canvas Scaler to "Scale With Screen Size"
+3. Reference Resolution: 1280 x 720
+
+Create UI Panels:
+a) Score Panel (top-left):
+   - Text: "MYER" (title)
+   - Text: "Score: 0"
+   - Text: "Level: 1"
+   - Text: "Lines: 0"
+
+b) Game Over Panel (center, initially inactive):
+   - Text: "GAME OVER"
+   - Text: "Final Score: 0"
+   - Button: "Play Again" (call GameManager.RestartGame)
+
+c) Pause Panel (center, initially inactive):
+   - Text: "PAUSED"
+   - Text: "Press P to resume"
+
+Assign UI Text references to GameManager.
+
+STEP 8: DRAW BOARD BOUNDARY (Optional)
+--------------------------------------------------------------------------------
+1. Create empty "BoardBorder"
+2. Add Line Renderer component
+3. Draw rectangle: (0,0) to (40,0) to (40,20) to (0,20) to (0,0)
+4. Set color to military olive: #556b2f
+
+STEP 9: MILITARY COLOR REFERENCE
+--------------------------------------------------------------------------------
+Piece Colors (RGB):
+  I - Army Green:    #4a5d23  (74, 93, 35)
+  J - Dark Brown:    #5c4033  (92, 64, 51)
+  L - Tan/Khaki:     #8b7355  (139, 115, 85)
+  O - Olive Drab:    #6b8e23  (107, 142, 35)
+  S - Dark Olive:    #556b2f  (85, 107, 47)
+  T - Forest Green:  #3d4f1f  (61, 79, 31)
+  Z - Coyote Brown:  #7c6c4f  (124, 108, 79)
+  X - Saddle Brown:  #8b4513  (139, 69, 19)
+
+UI Colors:
+  Background:        #1a1f14
+  Panel Background:  #2d2a1e
+  Border/Accent:     #556b2f
+  Text:              #d4c9a8
+  Highlight:         #9acd32
+
+STEP 10: TEST THE GAME
+--------------------------------------------------------------------------------
+1. Press Play in Unity
+2. Controls:
+   - Left/Right Arrow: Move piece
+   - Up Arrow: Rotate
+   - Down Arrow: Soft drop
+   - Space: Hard drop
+   - P: Pause
+
+STEP 11: BUILD
+--------------------------------------------------------------------------------
+1. File > Build Settings
+2. Add current scene
+3. Select platform (Windows/Mac/WebGL)
+4. Click Build
+
+================================================================================
+                         GAME SPECIFICATIONS
+================================================================================
+Board Size: 40 columns x 20 rows
+Pieces: 8 (standard 7 + Cross/X piece)
+Cross Piece: 5 blocks in + shape (unique to Myer)
+Theme: Military (olive, brown, khaki, tan colors)
+Scoring: 100/300/500/800 points for 1/2/3/4 lines
+Level Up: Every 10 lines
+Speed: Increases 0.1s per level (min 0.1s)
+================================================================================

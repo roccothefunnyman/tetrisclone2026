@@ -1,0 +1,365 @@
+================================================================================
+                    SPACE FIGHTER PROTOTYPE - Setup Guide
+                    6-DOF Space Flight Simulator in Unity
+================================================================================
+
+OVERVIEW
+--------------------------------------------------------------------------------
+This prototype provides:
+- 6-degrees-of-freedom flight controls (pitch, yaw, roll, thrust)
+- Momentum-based space physics with inertial dampening
+- Real-time HUD with speed, throttle, shield, and orientation displays
+- Multiple camera views (cockpit and chase)
+- Procedural starfield environment
+- Modular code ready for expansion
+
+================================================================================
+                         STEP 1: CREATE UNITY PROJECT
+================================================================================
+1. Open Unity Hub
+2. Click "New Project"
+3. Select "3D (Built-In Render Pipeline)" or "3D (URP)" template
+   - Unity 2021.3 LTS or newer recommended
+4. Name it "SpaceFighter" and choose location
+5. Click "Create Project"
+
+================================================================================
+                         STEP 2: IMPORT SCRIPTS
+================================================================================
+1. In Unity, navigate to Assets folder
+2. Create folders:
+   - Assets/Scripts
+   - Assets/Prefabs
+   - Assets/Materials
+   - Assets/Shaders
+3. Copy these files into Assets/Scripts:
+   - ShipController.cs
+   - HUDController.cs
+   - CameraController.cs
+   - StarfieldGenerator.cs
+   - GameManager.cs
+   - ShipBuilder.cs
+4. Copy into Assets/Shaders:
+   - SpaceSkybox.shader
+
+================================================================================
+                         STEP 3: IMPORT TEXTMESHPRO
+================================================================================
+1. Window > Package Manager
+2. Search for "TextMeshPro" (should be built-in)
+3. If not imported, click Import
+4. When prompted, import TMP Essential Resources
+
+================================================================================
+                         STEP 4: CREATE SKYBOX MATERIAL
+================================================================================
+1. Right-click in Assets/Materials > Create > Material
+2. Name it "SpaceSkyboxMaterial"
+3. In Inspector, change Shader to: Skybox/SpaceSkybox
+4. Adjust properties:
+   - Top Color: (5, 5, 13) - very dark blue
+   - Bottom Color: (0, 0, 5) - near black
+   - Nebula Color 1: (25, 5, 38, 76) - purple tint
+   - Nebula Color 2: (5, 20, 30, 76) - blue tint
+   - Nebula Intensity: 0.3
+   - Star Density: 500
+   - Star Brightness: 1
+5. Apply to scene:
+   - Window > Rendering > Lighting
+   - In Environment tab, assign SpaceSkyboxMaterial to Skybox Material
+
+================================================================================
+                         STEP 5: SCENE SETUP
+================================================================================
+1. Create new scene: File > New Scene (choose Basic 3D)
+2. Save as: Assets/Scenes/PrototypeScene.unity
+
+CAMERA SETUP:
+1. Select Main Camera in Hierarchy
+2. Add Component: CameraController
+3. Set settings:
+   - Chase Offset: (0, 3, -10)
+   - Cockpit Offset: (0, 0.5, 1)
+   - Chase FOV: 60
+   - Cockpit FOV: 75
+   - Enable Speed Effects: checked
+4. Set Clear Flags to "Skybox"
+
+LIGHTING SETUP:
+1. Select Directional Light
+2. Set Rotation: (50, -30, 0)
+3. Set Intensity: 1
+4. Color: Slight warm white (255, 252, 245)
+
+================================================================================
+                         STEP 6: CREATE PLAYER SHIP
+================================================================================
+1. Create Empty: Right-click Hierarchy > Create Empty
+2. Name it "PlayerShip"
+3. Position at (0, 0, 0)
+4. Add Components:
+   a) Rigidbody
+      - Use Gravity: UNCHECKED
+      - Drag: 0
+      - Angular Drag: 0.5
+      - Interpolate: Interpolate
+   b) ShipController (script)
+      - Max Thrust: 100
+      - Boost Multiplier: 2
+      - Pitch Speed: 50
+      - Yaw Speed: 50
+      - Roll Speed: 80
+      - Max Speed: 200
+      - Max Boost Speed: 400
+      - Inertial Dampening Enabled: checked
+   c) ShipBuilder (script)
+      - Build On Start: checked
+      - Add Collider: checked
+5. Test: Right-click ShipBuilder > "Build Ship" to see preview
+
+CREATE PREFAB:
+1. Drag PlayerShip from Hierarchy to Assets/Prefabs folder
+2. This creates a reusable prefab
+
+================================================================================
+                         STEP 7: CREATE STARFIELD
+================================================================================
+1. Create Empty: Hierarchy > Create Empty
+2. Name it "Starfield"
+3. Position at (0, 0, 0)
+4. Add Component: StarfieldGenerator
+5. Settings:
+   - Star Count: 5000
+   - Starfield Radius: 500
+   - Min Star Size: 0.5
+   - Max Star Size: 2
+   - Follow Player: checked
+6. Leave Follow Target empty (it auto-finds player)
+
+================================================================================
+                         STEP 8: CREATE GAME MANAGER
+================================================================================
+1. Create Empty: Hierarchy > Create Empty
+2. Name it "GameManager"
+3. Add Component: GameManager (script)
+4. Leave references empty (auto-populated at runtime)
+
+================================================================================
+                         STEP 9: CREATE HUD
+================================================================================
+1. Right-click Hierarchy > UI > Canvas
+2. Set Canvas settings:
+   - Render Mode: Screen Space - Overlay
+   - UI Scale Mode: Scale With Screen Size
+   - Reference Resolution: 1920 x 1080
+   - Match: 0.5
+
+HUD LAYOUT:
+Create the following UI structure:
+
+Canvas
+├── HUDController (Add component: HUDController script)
+├── TopLeftPanel (anchor: top-left)
+│   ├── SpeedText (TextMeshPro - Text)
+│   │   └── Text: "0 m/s", Font Size: 24, Color: #33FF66
+│   ├── MaxSpeedText (TextMeshPro - Text)
+│   │   └── Text: "/ 200", Font Size: 18, Color: #66AA66
+│   └── ThrottleText (TextMeshPro - Text)
+│       └── Text: "THR: 0%", Font Size: 20, Color: #33FF66
+│
+├── TopRightPanel (anchor: top-right)
+│   ├── ShieldText (TextMeshPro - Text)
+│   │   └── Text: "SHIELD: 100%", Font Size: 20, Color: #3399FF
+│   └── ShieldBar (UI > Slider)
+│       └── Fill Color: #3399FF
+│
+├── BottomLeftPanel (anchor: bottom-left)
+│   ├── HeadingText (TextMeshPro - Text)
+│   │   └── Text: "HDG 0°", Font Size: 18, Color: #33FF66
+│   ├── PitchText (TextMeshPro - Text)
+│   │   └── Text: "PIT 0°", Font Size: 18, Color: #33FF66
+│   └── RollText (TextMeshPro - Text)
+│       └── Text: "ROL 0°", Font Size: 18, Color: #33FF66
+│
+├── BottomRightPanel (anchor: bottom-right)
+│   ├── DampeningText (TextMeshPro - Text)
+│   │   └── Text: "DAMP ON", Font Size: 18, Color: #33FF66
+│   └── BoostIndicator (Image, initially disabled)
+│       └── Text: "BOOST", Color: #6699FF
+│
+├── CenterPanel (anchor: center)
+│   ├── Crosshair (Image)
+│   │   └── Use simple + shape, Color: #33FF66, Alpha: 0.8
+│   └── VelocityMarker (Image, prograde indicator)
+│       └── Circle shape, Color: #33FF66
+│
+└── PausePanel (initially inactive)
+    ├── Background (Image, black with 50% alpha)
+    └── PauseText (TextMeshPro - Text)
+        └── Text: "PAUSED\n\nPress ESC to resume", Centered
+
+CONNECT HUD REFERENCES:
+1. Select HUDController on Canvas
+2. Drag UI elements to corresponding fields in Inspector
+
+================================================================================
+                         STEP 10: CONNECT CAMERA TO SHIP
+================================================================================
+1. Select Main Camera
+2. In CameraController, drag PlayerShip to "Target" field
+3. The camera will now follow the ship
+
+================================================================================
+                         STEP 11: AMBIENT AUDIO (Optional)
+================================================================================
+1. Create Empty named "AmbientAudio"
+2. Add AudioSource component
+3. Import or create ambient space audio
+4. Set to Loop, Play On Awake
+
+================================================================================
+                              CONTROLS REFERENCE
+================================================================================
+FLIGHT CONTROLS:
+  W/S         - Pitch (nose up/down)
+  A/D         - Yaw (turn left/right)
+  Q/E         - Roll (barrel roll)
+  Shift       - Increase throttle
+  Ctrl        - Decrease throttle
+  Space       - Boost (hold while moving forward)
+  V           - Toggle inertial dampening
+
+CAMERA CONTROLS:
+  Tab         - Cycle camera views
+  F1          - Cockpit view
+  F2          - Chase view
+
+SYSTEM:
+  Escape      - Pause/Resume
+  H           - Show/hide controls help
+
+================================================================================
+                              HUD COLOR SCHEME
+================================================================================
+PRIMARY (Active/Good):    #33FF66 (bright green)
+SECONDARY (Info):         #66AA66 (muted green)
+SHIELD (Blue):            #3399FF (cyan blue)
+WARNING (Yellow):         #FFCC33 (amber)
+DANGER (Red):             #FF3333 (red)
+BOOST (Accent):           #6699FF (light blue)
+BACKGROUND:               #0A0A0A (near black)
+PANEL BG:                 #1A1A1A with 80% alpha
+
+================================================================================
+                              TESTING CHECKLIST
+================================================================================
+□ Ship spawns at origin
+□ Ship responds to all flight controls (WASD, QE, Shift/Ctrl, Space)
+□ Throttle increases/decreases smoothly
+□ Boost activates only when throttle > 0 and Space held
+□ Inertial dampening toggles with V key
+□ Speed limited to maxSpeed (200) normally
+□ Speed limited to maxBoostSpeed (400) when boosting
+□ Ship maintains momentum when inertial dampening is OFF
+□ HUD speed display updates in real-time
+□ HUD throttle display updates in real-time
+□ HUD orientation (heading/pitch/roll) updates
+□ Shield display shows 100%
+□ Camera follows ship smoothly in chase mode
+□ Camera locks to ship in cockpit mode
+□ Tab switches between camera views
+□ FOV increases with speed (dynamic effect)
+□ Camera shakes slightly during boost
+□ Starfield surrounds player and moves with them
+□ Stars visible against dark background
+□ Pause works with Escape key
+□ No console errors during gameplay
+
+================================================================================
+                              FUTURE EXPANSION
+================================================================================
+This prototype is designed for expansion. Suggested next steps:
+
+1. WEAPONS SYSTEM
+   - Add projectile spawning to ShipController
+   - Create Projectile prefab with physics
+   - Add weapon cooldown and energy management
+
+2. TARGETING SYSTEM
+   - Create target lock-on functionality
+   - Add lead indicator to HUD
+   - Create targeting bracket UI
+
+3. ENEMY AI
+   - Create EnemyShipController based on ShipController
+   - Implement basic pursuit/evade behaviors
+   - Add enemy spawning
+
+4. DAMAGE SYSTEM
+   - Implement hull integrity separate from shields
+   - Add visual damage effects
+   - Create explosion effects
+
+5. MULTIPLAYER PREPARATION
+   - Convert ShipController to use NetworkBehaviour
+   - Separate input from physics for network sync
+   - Add player spawn points
+
+================================================================================
+                              KNOWN LIMITATIONS
+================================================================================
+- Ship uses primitive shapes (replace with proper 3D model)
+- No sound effects implemented
+- No particle effects for engines/weapons
+- Shield is placeholder only (no damage system)
+- Power distribution is visual only (not functional)
+- No minimap/radar
+
+================================================================================
+                              TROUBLESHOOTING
+================================================================================
+PROBLEM: Ship doesn't move
+- Check Rigidbody has Use Gravity UNCHECKED
+- Check ShipController is attached
+- Check for errors in Console
+
+PROBLEM: HUD doesn't update
+- Check HUDController has Ship reference
+- Check all UI elements are assigned
+
+PROBLEM: Camera doesn't follow
+- Check CameraController has Target assigned
+- Check ship has ShipController component
+
+PROBLEM: Starfield not visible
+- Check StarfieldGenerator is in scene
+- Check camera Clear Flags is "Skybox"
+- Check skybox material is assigned
+
+PROBLEM: Stars too dim/bright
+- Adjust Star Brightness in StarfieldGenerator
+- Adjust Star Size parameter
+
+================================================================================
+                         PROJECT STRUCTURE
+================================================================================
+SpaceFighter/
+├── Assets/
+│   ├── Materials/
+│   │   └── SpaceSkyboxMaterial.mat
+│   ├── Prefabs/
+│   │   └── PlayerShip.prefab
+│   ├── Scenes/
+│   │   └── PrototypeScene.unity
+│   ├── Scripts/
+│   │   ├── CameraController.cs
+│   │   ├── GameManager.cs
+│   │   ├── HUDController.cs
+│   │   ├── ShipBuilder.cs
+│   │   ├── ShipController.cs
+│   │   └── StarfieldGenerator.cs
+│   └── Shaders/
+│       └── SpaceSkybox.shader
+└── SETUP_INSTRUCTIONS.txt
+
+================================================================================

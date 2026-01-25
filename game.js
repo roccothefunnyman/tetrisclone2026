@@ -1,17 +1,18 @@
 // Tetris Clone 2026
 // Game constants
-const COLS = 10;
+const COLS = 40;
 const ROWS = 20;
 const BLOCK_SIZE = 30;
 const COLORS = [
     null,
-    '#00f0f0', // I - Cyan
-    '#0000f0', // J - Blue
-    '#f0a000', // L - Orange
-    '#f0f000', // O - Yellow
-    '#00f000', // S - Green
-    '#a000f0', // T - Purple
-    '#f00000'  // Z - Red
+    '#4a5d23', // I - Army Green
+    '#5c4033', // J - Dark Brown
+    '#8b7355', // L - Tan/Khaki
+    '#6b8e23', // O - Olive Drab
+    '#556b2f', // S - Dark Olive
+    '#3d4f1f', // T - Forest Green
+    '#7c6c4f', // Z - Coyote Brown
+    '#8b4513'  // X - Saddle Brown (Cross piece)
 ];
 
 // Tetromino shapes
@@ -23,7 +24,8 @@ const SHAPES = [
     [[4,4], [4,4]],                                 // O
     [[0,5,5], [5,5,0], [0,0,0]],                   // S
     [[0,6,0], [6,6,6], [0,0,0]],                   // T
-    [[7,7,0], [0,7,7], [0,0,0]]                    // Z
+    [[7,7,0], [0,7,7], [0,0,0]],                   // Z
+    [[0,8,0], [8,8,8], [0,8,0]]                    // X - Cross (unique piece)
 ];
 
 // Game state
@@ -72,7 +74,7 @@ function createBoard() {
 }
 
 function createPiece() {
-    const type = Math.floor(Math.random() * 7) + 1;
+    const type = Math.floor(Math.random() * 8) + 1;
     return {
         shape: SHAPES[type].map(row => [...row]),
         color: type,
