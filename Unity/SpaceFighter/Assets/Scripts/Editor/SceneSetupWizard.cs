@@ -2,9 +2,13 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.UI;
 using TMPro;
+using SpaceFighter.Core;
+using SpaceFighter.Systems;
+using SpaceFighter.UI;
 
 /// <summary>
 /// Editor wizard that automatically sets up the complete Space Fighter prototype scene.
+/// Updated for multi-station architecture (Phase 1).
 /// Run from menu: Tools > Space Fighter > Setup Prototype Scene
 /// </summary>
 public class SceneSetupWizard : EditorWindow
@@ -18,14 +22,14 @@ public class SceneSetupWizard : EditorWindow
     private void OnGUI()
     {
         GUILayout.Label("Space Fighter Prototype Setup", EditorStyles.boldLabel);
+        GUILayout.Label("Multi-Station Architecture - Phase 1", EditorStyles.miniLabel);
         GUILayout.Space(10);
 
         GUILayout.Label("This will set up the complete prototype scene including:");
-        GUILayout.Label("  - Player Ship with flight controls");
+        GUILayout.Label("  - Ship with modular systems (Power, Navigation, Hull)");
         GUILayout.Label("  - Camera system (cockpit + chase views)");
         GUILayout.Label("  - Starfield environment");
-        GUILayout.Label("  - HUD with all displays");
-        GUILayout.Label("  - Game Manager");
+        GUILayout.Label("  - Unified Fighter HUD");
         GUILayout.Space(10);
 
         if (GUILayout.Button("Setup Complete Scene", GUILayout.Height(40)))
@@ -55,11 +59,6 @@ public class SceneSetupWizard : EditorWindow
         {
             SetupHUD();
         }
-
-        if (GUILayout.Button("5. Setup Game Manager Only"))
-        {
-            SetupGameManager();
-        }
     }
 
     /// <summary>
@@ -67,26 +66,33 @@ public class SceneSetupWizard : EditorWindow
     /// </summary>
     public static void SetupScene()
     {
-        Debug.Log("Setting up Space Fighter Prototype Scene...");
+        Debug.Log("Setting up Space Fighter Prototype Scene (Multi-Station Architecture)...");
 
         SetupSkybox();
         SetupLighting();
         SetupPlayerShip();
         SetupCamera();
         SetupStarfield();
-        SetupGameManager();
         SetupHUD();
 
         Debug.Log("Scene setup complete! Press Play to test.");
         EditorUtility.DisplayDialog("Setup Complete",
             "Space Fighter prototype scene has been set up!\n\n" +
-            "Press Play to test the controls:\n" +
+            "Press Play to test the controls:\n\n" +
+            "FLIGHT:\n" +
             "- WASD: Pitch/Yaw\n" +
             "- Q/E: Roll\n" +
             "- Shift/Ctrl: Throttle\n" +
             "- Space: Boost\n" +
-            "- Tab: Switch camera\n" +
-            "- V: Toggle dampening\n" +
+            "- X: Toggle dampening\n" +
+            "- Arrow Keys: Strafe\n\n" +
+            "POWER:\n" +
+            "- 1: Balanced\n" +
+            "- 2: Combat\n" +
+            "- 3: Speed\n" +
+            "- 4: Defensive\n\n" +
+            "CAMERA:\n" +
+            "- Tab: Switch view\n" +
             "- Esc: Pause",
             "OK");
     }
@@ -155,7 +161,7 @@ public class SceneSetupWizard : EditorWindow
     private static void SetupPlayerShip()
     {
         // Check if ship already exists
-        ShipController existingShip = Object.FindFirstObjectByType<ShipController>();
+        Ship existingShip = Object.FindFirstObjectByType<Ship>();
         if (existingShip != null)
         {
             Debug.Log("Player ship already exists");
@@ -163,34 +169,49 @@ public class SceneSetupWizard : EditorWindow
         }
 
         // Create player ship
-        GameObject ship = new GameObject("PlayerShip");
-        ship.transform.position = Vector3.zero;
+        GameObject shipObj = new GameObject("PlayerShip");
+        shipObj.transform.position = Vector3.zero;
 
-        // Add Rigidbody
-        Rigidbody rb = ship.AddComponent<Rigidbody>();
-        rb.useGravity = false;
-        rb.linearDamping = 0f;
-        rb.angularDamping = 0.5f;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        // Add Ship component (this will auto-create systems)
+        Ship ship = shipObj.AddComponent<Ship>();
 
-        // Add ShipController
-        ship.AddComponent<ShipController>();
-
-        // Add ShipBuilder and build the ship model
-        ShipBuilder builder = ship.AddComponent<ShipBuilder>();
+        // Add ShipBuilder for visual model
+        ShipBuilder builder = shipObj.AddComponent<ShipBuilder>();
         builder.BuildShip();
+
+        // Create default ShipConfig
+        ShipConfig config = ScriptableObject.CreateInstance<ShipConfig>();
+        config.shipName = "Fighter-01";
+        config.shipClass = "Fighter";
+
+        // Save config asset
+        if (!AssetDatabase.IsValidFolder("Assets/Resources"))
+        {
+            AssetDatabase.CreateFolder("Assets", "Resources");
+        }
+        if (!AssetDatabase.IsValidFolder("Assets/Resources/Configs"))
+        {
+            AssetDatabase.CreateFolder("Assets/Resources", "Configs");
+        }
+        AssetDatabase.CreateAsset(config, "Assets/Resources/Configs/DefaultFighterConfig.asset");
+
+        // Assign config to ship
+        SetPrivateField(ship, "shipConfig", config);
 
         // Save as prefab
         if (!AssetDatabase.IsValidFolder("Assets/Prefabs"))
         {
             AssetDatabase.CreateFolder("Assets", "Prefabs");
         }
+        if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Ships"))
+        {
+            AssetDatabase.CreateFolder("Assets/Prefabs", "Ships");
+        }
 
-        // Create prefab
-        string prefabPath = "Assets/Prefabs/PlayerShip.prefab";
-        PrefabUtility.SaveAsPrefabAsset(ship, prefabPath);
+        string prefabPath = "Assets/Prefabs/Ships/PlayerShip.prefab";
+        PrefabUtility.SaveAsPrefabAsset(shipObj, prefabPath);
 
-        Debug.Log("Player ship created and saved as prefab");
+        Debug.Log("Player ship created with modular systems");
     }
 
     private static void SetupCamera()
@@ -238,34 +259,18 @@ public class SceneSetupWizard : EditorWindow
         Debug.Log("Starfield created");
     }
 
-    private static void SetupGameManager()
-    {
-        // Check if game manager exists
-        GameManager existingGM = Object.FindFirstObjectByType<GameManager>();
-        if (existingGM != null)
-        {
-            Debug.Log("Game Manager already exists");
-            return;
-        }
-
-        GameObject gmObj = new GameObject("GameManager");
-        gmObj.AddComponent<GameManager>();
-
-        Debug.Log("Game Manager created");
-    }
-
     private static void SetupHUD()
     {
-        // Check if canvas exists
-        Canvas existingCanvas = Object.FindFirstObjectByType<Canvas>();
-        if (existingCanvas != null && existingCanvas.GetComponent<HUDController>() != null)
+        // Check if HUD exists
+        UnifiedFighterHUD existingHUD = Object.FindFirstObjectByType<UnifiedFighterHUD>();
+        if (existingHUD != null)
         {
             Debug.Log("HUD already exists");
             return;
         }
 
         // Create Canvas
-        GameObject canvasObj = new GameObject("HUDCanvas");
+        GameObject canvasObj = new GameObject("FighterHUD");
         Canvas canvas = canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
@@ -276,226 +281,207 @@ public class SceneSetupWizard : EditorWindow
 
         canvasObj.AddComponent<GraphicRaycaster>();
 
-        // Add HUDController
-        HUDController hudController = canvasObj.AddComponent<HUDController>();
+        // Add UnifiedFighterHUD
+        UnifiedFighterHUD hud = canvasObj.AddComponent<UnifiedFighterHUD>();
 
         // Create HUD panels
-        CreateTopLeftPanel(canvasObj.transform, hudController);
-        CreateTopRightPanel(canvasObj.transform, hudController);
-        CreateBottomLeftPanel(canvasObj.transform, hudController);
-        CreateBottomRightPanel(canvasObj.transform, hudController);
-        CreateCenterPanel(canvasObj.transform, hudController);
-        CreatePausePanel(canvasObj.transform);
+        CreateTopPanel(canvasObj.transform, hud);
+        CreateBottomLeftPanel(canvasObj.transform, hud);
+        CreateBottomCenterPanel(canvasObj.transform, hud);
+        CreateBottomRightPanel(canvasObj.transform, hud);
+        CreateCenterCrosshair(canvasObj.transform, hud);
 
-        Debug.Log("HUD created with all panels");
+        Debug.Log("Unified Fighter HUD created");
     }
 
-    private static void CreateTopLeftPanel(Transform parent, HUDController hud)
+    private static void CreateTopPanel(Transform parent, UnifiedFighterHUD hud)
     {
-        GameObject panel = CreatePanel("TopLeftPanel", parent, TextAnchor.UpperLeft);
+        GameObject panel = CreatePanel("TopPanel", parent);
         RectTransform rt = panel.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0, 1);
-        rt.anchorMax = new Vector2(0, 1);
-        rt.pivot = new Vector2(0, 1);
-        rt.anchoredPosition = new Vector2(20, -20);
-        rt.sizeDelta = new Vector2(300, 150);
-
-        VerticalLayoutGroup vlg = panel.AddComponent<VerticalLayoutGroup>();
-        vlg.childAlignment = TextAnchor.UpperLeft;
-        vlg.spacing = 5;
-        vlg.padding = new RectOffset(10, 10, 10, 10);
-        vlg.childControlWidth = true;
-        vlg.childControlHeight = false;
-        vlg.childForceExpandWidth = true;
-        vlg.childForceExpandHeight = false;
-
-        // Speed text
-        TextMeshProUGUI speedText = CreateText("SpeedText", panel.transform, "0 m/s", 28);
-        speedText.color = HexColor("33FF66");
-
-        // Max speed text
-        TextMeshProUGUI maxSpeedText = CreateText("MaxSpeedText", panel.transform, "/ 200", 18);
-        maxSpeedText.color = HexColor("66AA66");
-
-        // Throttle text
-        TextMeshProUGUI throttleText = CreateText("ThrottleText", panel.transform, "THR: 0%", 22);
-        throttleText.color = HexColor("33FF66");
-
-        // Assign references via serialized fields
-        SetPrivateField(hud, "speedText", speedText);
-        SetPrivateField(hud, "maxSpeedText", maxSpeedText);
-        SetPrivateField(hud, "throttleText", throttleText);
-    }
-
-    private static void CreateTopRightPanel(Transform parent, HUDController hud)
-    {
-        GameObject panel = CreatePanel("TopRightPanel", parent, TextAnchor.UpperRight);
-        RectTransform rt = panel.GetComponent<RectTransform>();
-        rt.anchorMin = new Vector2(1, 1);
         rt.anchorMax = new Vector2(1, 1);
-        rt.pivot = new Vector2(1, 1);
-        rt.anchoredPosition = new Vector2(-20, -20);
-        rt.sizeDelta = new Vector2(250, 100);
+        rt.pivot = new Vector2(0.5f, 1);
+        rt.anchoredPosition = new Vector2(0, -10);
+        rt.sizeDelta = new Vector2(-40, 80);
 
-        VerticalLayoutGroup vlg = panel.AddComponent<VerticalLayoutGroup>();
-        vlg.childAlignment = TextAnchor.UpperRight;
-        vlg.spacing = 5;
-        vlg.padding = new RectOffset(10, 10, 10, 10);
-        vlg.childControlWidth = true;
-        vlg.childControlHeight = false;
+        HorizontalLayoutGroup hlg = panel.AddComponent<HorizontalLayoutGroup>();
+        hlg.childAlignment = TextAnchor.MiddleCenter;
+        hlg.spacing = 30;
+        hlg.padding = new RectOffset(20, 20, 10, 10);
+        hlg.childControlWidth = false;
+        hlg.childControlHeight = true;
+        hlg.childForceExpandWidth = false;
 
-        // Shield text
-        TextMeshProUGUI shieldText = CreateText("ShieldText", panel.transform, "SHIELD: 100%", 20);
-        shieldText.color = HexColor("3399FF");
-        shieldText.alignment = TextAlignmentOptions.Right;
+        // Hull section
+        GameObject hullSection = CreateSection("HullSection", panel.transform, 200);
+        TextMeshProUGUI hullText = CreateText("HullText", hullSection.transform, "HULL: 100%", 22);
+        hullText.color = HexColor("33FF66");
+        SetPrivateField(hud, "hullText", hullText);
 
-        SetPrivateField(hud, "shieldText", shieldText);
+        // Ship name section
+        GameObject nameSection = CreateSection("NameSection", panel.transform, 200);
+        TextMeshProUGUI nameText = CreateText("ShipName", nameSection.transform, "FIGHTER-01", 24);
+        nameText.color = HexColor("FFFFFF");
+        nameText.alignment = TextAlignmentOptions.Center;
+
+        // Power section
+        GameObject powerSection = CreateSection("PowerSection", panel.transform, 250);
+        TextMeshProUGUI powerText = CreateText("PowerText", powerSection.transform, "PWR: [BALANCED]", 20);
+        powerText.color = HexColor("33FF66");
+        powerText.alignment = TextAlignmentOptions.Right;
+        SetPrivateField(hud, "powerPresetText", powerText);
     }
 
-    private static void CreateBottomLeftPanel(Transform parent, HUDController hud)
+    private static void CreateBottomLeftPanel(Transform parent, UnifiedFighterHUD hud)
     {
-        GameObject panel = CreatePanel("BottomLeftPanel", parent, TextAnchor.LowerLeft);
+        GameObject panel = CreatePanel("BottomLeftPanel", parent);
         RectTransform rt = panel.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0, 0);
         rt.anchorMax = new Vector2(0, 0);
         rt.pivot = new Vector2(0, 0);
         rt.anchoredPosition = new Vector2(20, 20);
-        rt.sizeDelta = new Vector2(200, 100);
+        rt.sizeDelta = new Vector2(280, 150);
 
         VerticalLayoutGroup vlg = panel.AddComponent<VerticalLayoutGroup>();
         vlg.childAlignment = TextAnchor.LowerLeft;
-        vlg.spacing = 2;
-        vlg.padding = new RectOffset(10, 10, 10, 10);
+        vlg.spacing = 5;
+        vlg.padding = new RectOffset(15, 15, 10, 10);
         vlg.childControlWidth = true;
         vlg.childControlHeight = false;
 
-        // Orientation texts
-        TextMeshProUGUI headingText = CreateText("HeadingText", panel.transform, "HDG 0", 16);
+        // Orientation
+        TextMeshProUGUI headingText = CreateText("HeadingText", panel.transform, "HDG 0°", 18);
         headingText.color = HexColor("33FF66");
-
-        TextMeshProUGUI pitchText = CreateText("PitchText", panel.transform, "PIT 0", 16);
-        pitchText.color = HexColor("33FF66");
-
-        TextMeshProUGUI rollText = CreateText("RollText", panel.transform, "ROL 0", 16);
-        rollText.color = HexColor("33FF66");
-
         SetPrivateField(hud, "headingText", headingText);
+
+        TextMeshProUGUI pitchText = CreateText("PitchText", panel.transform, "PIT 0°", 18);
+        pitchText.color = HexColor("33FF66");
         SetPrivateField(hud, "pitchText", pitchText);
+
+        TextMeshProUGUI rollText = CreateText("RollText", panel.transform, "ROL 0°", 18);
+        rollText.color = HexColor("33FF66");
         SetPrivateField(hud, "rollText", rollText);
+
+        // Dampening
+        TextMeshProUGUI dampText = CreateText("DampeningText", panel.transform, "DAMP: ON", 18);
+        dampText.color = HexColor("33FF66");
+        SetPrivateField(hud, "dampeningText", dampText);
     }
 
-    private static void CreateBottomRightPanel(Transform parent, HUDController hud)
+    private static void CreateBottomCenterPanel(Transform parent, UnifiedFighterHUD hud)
     {
-        GameObject panel = CreatePanel("BottomRightPanel", parent, TextAnchor.LowerRight);
+        GameObject panel = CreatePanel("BottomCenterPanel", parent);
+        RectTransform rt = panel.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0);
+        rt.anchorMax = new Vector2(0.5f, 0);
+        rt.pivot = new Vector2(0.5f, 0);
+        rt.anchoredPosition = new Vector2(0, 20);
+        rt.sizeDelta = new Vector2(300, 100);
+
+        VerticalLayoutGroup vlg = panel.AddComponent<VerticalLayoutGroup>();
+        vlg.childAlignment = TextAnchor.MiddleCenter;
+        vlg.spacing = 5;
+        vlg.padding = new RectOffset(15, 15, 10, 10);
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = false;
+
+        // Speed
+        TextMeshProUGUI speedText = CreateText("SpeedText", panel.transform, "0 m/s", 28);
+        speedText.color = HexColor("33FF66");
+        speedText.alignment = TextAlignmentOptions.Center;
+        SetPrivateField(hud, "speedText", speedText);
+
+        // Throttle
+        TextMeshProUGUI throttleText = CreateText("ThrottleText", panel.transform, "THR: 0%", 20);
+        throttleText.color = HexColor("33FF66");
+        throttleText.alignment = TextAlignmentOptions.Center;
+        SetPrivateField(hud, "throttleText", throttleText);
+    }
+
+    private static void CreateBottomRightPanel(Transform parent, UnifiedFighterHUD hud)
+    {
+        GameObject panel = CreatePanel("BottomRightPanel", parent);
         RectTransform rt = panel.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(1, 0);
         rt.anchorMax = new Vector2(1, 0);
         rt.pivot = new Vector2(1, 0);
         rt.anchoredPosition = new Vector2(-20, 20);
-        rt.sizeDelta = new Vector2(150, 80);
+        rt.sizeDelta = new Vector2(200, 120);
 
         VerticalLayoutGroup vlg = panel.AddComponent<VerticalLayoutGroup>();
         vlg.childAlignment = TextAnchor.LowerRight;
-        vlg.spacing = 5;
-        vlg.padding = new RectOffset(10, 10, 10, 10);
+        vlg.spacing = 3;
+        vlg.padding = new RectOffset(15, 15, 10, 10);
         vlg.childControlWidth = true;
         vlg.childControlHeight = false;
 
-        // Dampening text
-        TextMeshProUGUI dampeningText = CreateText("DampeningText", panel.transform, "DAMP ON", 16);
-        dampeningText.color = HexColor("33FF66");
-        dampeningText.alignment = TextAlignmentOptions.Right;
+        // Power distribution
+        TextMeshProUGUI engineText = CreateText("EngineText", panel.transform, "E: 33%", 16);
+        engineText.color = HexColor("33FF66");
+        engineText.alignment = TextAlignmentOptions.Right;
+        SetPrivateField(hud, "enginePowerText", engineText);
+
+        TextMeshProUGUI weaponText = CreateText("WeaponText", panel.transform, "W: 33%", 16);
+        weaponText.color = HexColor("FF6633");
+        weaponText.alignment = TextAlignmentOptions.Right;
+        SetPrivateField(hud, "weaponPowerText", weaponText);
+
+        TextMeshProUGUI shieldText = CreateText("ShieldText", panel.transform, "S: 33%", 16);
+        shieldText.color = HexColor("3399FF");
+        shieldText.alignment = TextAlignmentOptions.Right;
+        SetPrivateField(hud, "shieldPowerText", shieldText);
 
         // Boost indicator
         GameObject boostObj = new GameObject("BoostIndicator");
         boostObj.transform.SetParent(panel.transform);
+        RectTransform boostRT = boostObj.AddComponent<RectTransform>();
+        boostRT.sizeDelta = new Vector2(100, 25);
         TextMeshProUGUI boostText = boostObj.AddComponent<TextMeshProUGUI>();
         boostText.text = "BOOST";
-        boostText.fontSize = 18;
+        boostText.fontSize = 20;
         boostText.color = HexColor("6699FF");
         boostText.alignment = TextAlignmentOptions.Right;
         boostObj.SetActive(false);
-
-        SetPrivateField(hud, "dampeningText", dampeningText);
         SetPrivateField(hud, "boostIndicator", boostObj);
     }
 
-    private static void CreateCenterPanel(Transform parent, HUDController hud)
+    private static void CreateCenterCrosshair(Transform parent, UnifiedFighterHUD hud)
     {
-        // Crosshair
         GameObject crosshairObj = new GameObject("Crosshair");
         crosshairObj.transform.SetParent(parent);
-        RectTransform crosshairRT = crosshairObj.AddComponent<RectTransform>();
-        crosshairRT.anchorMin = new Vector2(0.5f, 0.5f);
-        crosshairRT.anchorMax = new Vector2(0.5f, 0.5f);
-        crosshairRT.anchoredPosition = Vector2.zero;
-        crosshairRT.sizeDelta = new Vector2(40, 40);
+        RectTransform rt = crosshairObj.AddComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = Vector2.zero;
+        rt.sizeDelta = new Vector2(40, 40);
 
         Image crosshairImage = crosshairObj.AddComponent<Image>();
         crosshairImage.color = new Color(0.2f, 1f, 0.4f, 0.8f);
-
-        // Create simple crosshair sprite (or use default)
         crosshairImage.sprite = CreateCrosshairSprite();
 
-        SetPrivateField(hud, "crosshair", crosshairRT);
+        SetPrivateField(hud, "crosshair", rt);
         SetPrivateField(hud, "crosshairImage", crosshairImage);
 
-        // Velocity marker
-        GameObject velocityObj = new GameObject("VelocityMarker");
-        velocityObj.transform.SetParent(parent);
-        RectTransform velocityRT = velocityObj.AddComponent<RectTransform>();
-        velocityRT.anchorMin = new Vector2(0.5f, 0.5f);
-        velocityRT.anchorMax = new Vector2(0.5f, 0.5f);
-        velocityRT.anchoredPosition = Vector2.zero;
-        velocityRT.sizeDelta = new Vector2(20, 20);
+        // Critical warning (hidden by default)
+        GameObject criticalObj = new GameObject("CriticalWarning");
+        criticalObj.transform.SetParent(parent);
+        RectTransform critRT = criticalObj.AddComponent<RectTransform>();
+        critRT.anchorMin = new Vector2(0.5f, 0.5f);
+        critRT.anchorMax = new Vector2(0.5f, 0.5f);
+        critRT.anchoredPosition = new Vector2(0, 100);
+        critRT.sizeDelta = new Vector2(300, 50);
 
-        Image velocityImage = velocityObj.AddComponent<Image>();
-        velocityImage.color = new Color(0.2f, 1f, 0.4f, 0.6f);
+        TextMeshProUGUI critText = criticalObj.AddComponent<TextMeshProUGUI>();
+        critText.text = "!! HULL CRITICAL !!";
+        critText.fontSize = 28;
+        critText.color = HexColor("FF3333");
+        critText.alignment = TextAlignmentOptions.Center;
+        criticalObj.SetActive(false);
 
-        SetPrivateField(hud, "velocityMarker", velocityRT);
+        SetPrivateField(hud, "criticalWarning", criticalObj);
     }
 
-    private static void CreatePausePanel(Transform parent)
-    {
-        GameObject pausePanel = new GameObject("PausePanel");
-        pausePanel.transform.SetParent(parent);
-
-        RectTransform rt = pausePanel.AddComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-
-        // Background
-        Image bg = pausePanel.AddComponent<Image>();
-        bg.color = new Color(0, 0, 0, 0.7f);
-
-        // Pause text
-        GameObject textObj = new GameObject("PauseText");
-        textObj.transform.SetParent(pausePanel.transform);
-        RectTransform textRT = textObj.AddComponent<RectTransform>();
-        textRT.anchorMin = new Vector2(0.5f, 0.5f);
-        textRT.anchorMax = new Vector2(0.5f, 0.5f);
-        textRT.anchoredPosition = Vector2.zero;
-        textRT.sizeDelta = new Vector2(400, 200);
-
-        TextMeshProUGUI pauseText = textObj.AddComponent<TextMeshProUGUI>();
-        pauseText.text = "PAUSED\n\nPress ESC to resume\nPress H for controls";
-        pauseText.fontSize = 36;
-        pauseText.color = HexColor("33FF66");
-        pauseText.alignment = TextAlignmentOptions.Center;
-
-        pausePanel.SetActive(false);
-
-        // Assign to GameManager
-        GameManager gm = Object.FindFirstObjectByType<GameManager>();
-        if (gm != null)
-        {
-            SetPrivateField(gm, "pausePanel", pausePanel);
-        }
-    }
-
-    private static GameObject CreatePanel(string name, Transform parent, TextAnchor alignment)
+    private static GameObject CreatePanel(string name, Transform parent)
     {
         GameObject panel = new GameObject(name);
         panel.transform.SetParent(parent);
@@ -503,11 +489,24 @@ public class SceneSetupWizard : EditorWindow
         RectTransform rt = panel.AddComponent<RectTransform>();
         rt.localScale = Vector3.one;
 
-        // Semi-transparent background
         Image bg = panel.AddComponent<Image>();
-        bg.color = new Color(0.05f, 0.05f, 0.08f, 0.6f);
+        bg.color = new Color(0.05f, 0.05f, 0.08f, 0.7f);
 
         return panel;
+    }
+
+    private static GameObject CreateSection(string name, Transform parent, float width)
+    {
+        GameObject section = new GameObject(name);
+        section.transform.SetParent(parent);
+
+        RectTransform rt = section.AddComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(width, 60);
+
+        LayoutElement le = section.AddComponent<LayoutElement>();
+        le.preferredWidth = width;
+
+        return section;
     }
 
     private static TextMeshProUGUI CreateText(string name, Transform parent, string text, int fontSize)
@@ -534,13 +533,11 @@ public class SceneSetupWizard : EditorWindow
 
     private static Sprite CreateCrosshairSprite()
     {
-        // Create a simple crosshair texture
         int size = 64;
         Texture2D tex = new Texture2D(size, size);
         Color transparent = new Color(0, 0, 0, 0);
         Color white = Color.white;
 
-        // Fill with transparent
         for (int x = 0; x < size; x++)
         {
             for (int y = 0; y < size; y++)
@@ -549,26 +546,23 @@ public class SceneSetupWizard : EditorWindow
             }
         }
 
-        // Draw crosshair
         int center = size / 2;
         int thickness = 2;
         int gap = 6;
         int length = 12;
 
-        // Horizontal lines
         for (int i = gap; i < gap + length; i++)
         {
-            for (int t = -thickness/2; t <= thickness/2; t++)
+            for (int t = -thickness / 2; t <= thickness / 2; t++)
             {
                 tex.SetPixel(center + i, center + t, white);
                 tex.SetPixel(center - i, center + t, white);
             }
         }
 
-        // Vertical lines
         for (int i = gap; i < gap + length; i++)
         {
-            for (int t = -thickness/2; t <= thickness/2; t++)
+            for (int t = -thickness / 2; t <= thickness / 2; t++)
             {
                 tex.SetPixel(center + t, center + i, white);
                 tex.SetPixel(center + t, center - i, white);
